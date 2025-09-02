@@ -2,19 +2,18 @@
 name = "multi-agent-backend"
 version = "0.1.0"
 description = "FastAPI backend for the multi-agent orchestration system."
-authors =
+authors = ["Avinash Rai <avinash.rai@example.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
 fastapi = "^0.111.0"
 uvicorn = {extras = ["standard"], version = "^0.29.0"}
 python-dotenv = "^1.0.1"
-pydantic-settings = "^2.2.1"
+pydantic-settings = "^2.10.1"
 sse-starlette = "^2.1.0"
-semantic-kernel = "^1.4.1"
-microsoft-semantickernel-connectors-google = "^1.4.1.dev"
-
+semantic-kernel = "^1.36.1"
 
 [build-system]
 requires = ["poetry-core"]
