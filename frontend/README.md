@@ -7,6 +7,8 @@ This project is a complete full-stack application that demonstrates a multi-agen
 
 ---
 
+pip install git+https://github.com/dkapur17/streamlit-flow.git
+
 ## ✨ Features
 
 * **Decoupled Architecture:** A high-performance FastAPI backend for AI logic, completely separate from the Streamlit frontend for the user interface.

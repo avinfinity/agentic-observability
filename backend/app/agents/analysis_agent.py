@@ -1,5 +1,3 @@
-# backend/app/agents/analysis_agent.py
-
 import semantic_kernel as sk
 from semantic_kernel.agents import ChatCompletionAgent
 
@@ -43,5 +41,5 @@ def create_analysis_agent(
         name="AnalysisAgent",
         instructions=ANALYSIS_AGENT_INSTRUCTIONS,
         # This agent has no plugins, as its function is purely analytical.
-        plugins=,
+        #plugins=,
     )

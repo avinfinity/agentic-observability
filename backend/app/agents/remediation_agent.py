@@ -1,8 +1,6 @@
-# backend/app/agents/remediation_agent.py
-
 import semantic_kernel as sk
 from semantic_kernel.agents import ChatCompletionAgent
-from semantic_kernel.functions import kernel_function
+from semantic_kernel.functions import kernel_function, KernelPlugin
 from typing import Literal
 
 # --- Agent Instructions ---
@@ -51,6 +49,7 @@ class RemediationTools:
 
 def create_remediation_agent(
     kernel: sk.Kernel,
+    plugin: KernelPlugin,
 ) -> ChatCompletionAgent:
     """
     Creates the RemediationAgent with its specialized tools.
@@ -60,6 +59,7 @@ def create_remediation_agent(
 
     Args:
         kernel: The Semantic Kernel instance that the agent will use.
+        plugin: The KernelPlugin containing the remediation tools.
 
     Returns:
         An instance of ChatCompletionAgent configured for remediation tasks.
@@ -69,7 +69,6 @@ def create_remediation_agent(
         kernel=kernel,
         name="RemediationAgent",
         instructions=REMEDIATION_AGENT_INSTRUCTIONS,
-        # The RemediationTools class is provided as a plugin, making its
-        # @kernel_function decorated methods available to the agent.
-        plugins=,
+        # The RemediationTools plugin is provided to the agent.
+        plugins=[plugin],
     )

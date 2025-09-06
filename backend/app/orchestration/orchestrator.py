@@ -1,8 +1,6 @@
-# backend/app/orchestration/orchestrator.py
-
 import asyncio
 import semantic_kernel as sk
-from semantic_kernel.connectors.ai.google import GoogleAIChatCompletion
+from semantic_kernel.connectors.ai.google.vertex_ai import VertexAIChatCompletion
 from semantic_kernel.agents import ChatCompletionAgent
 
 from app.core.config import settings
@@ -41,9 +39,9 @@ def initialize_kernel() -> sk.Kernel:
     """
     kernel = sk.Kernel()
 
+
     # Configure the Gemini chat completion service [3]
-    gemini_service = GoogleAIChatCompletion(
-        model_id=settings.GEMINI_MODEL_ID,
+    gemini_service = VertexAIChatCompletion(
         api_key=settings.GOOGLE_API_KEY,
     )
 

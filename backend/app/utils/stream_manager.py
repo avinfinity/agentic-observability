@@ -2,7 +2,7 @@ import asyncio
 import json
 from typing import Dict, AsyncGenerator
 
-class StreamManager:
+class stream_manager:
     def __init__(self):
         self.queues: Dict[str, asyncio.Queue] = {}
         self.active: Dict[str, bool] = {}
@@ -39,4 +39,4 @@ class StreamManager:
         # Clean up the queue after the stream is finished
         del self.queues[workflow_id]
 
-stream_manager = StreamManager()
+stream_manager = stream_manager()

@@ -1,5 +1,3 @@
-# frontend/app.py
-
 import streamlit as st
 import os
 import queue
@@ -46,7 +44,7 @@ if "api_client" not in st.session_state:
 if "listener_started" not in st.session_state:
     st.session_state.listener_started = False
 if "logs" not in st.session_state:
-    st.session_state.logs =
+    st.session_state.logs = []
 
 # --- UI Layout ---
 # The main UI is split into two columns for a clean dashboard layout.
@@ -63,7 +61,11 @@ with col1:
 
     if st.button("🚀 Start Agent Workflow", use_container_width=True, type="primary"):
         # Reset the state for a new workflow run
-        st.session_state.logs =
+        st.session_state.logs = [{
+            "agent_name": "System",
+            "status": "ERROR",
+            "message": "Error while creating namespace"
+        }]
         st.session_state.messages = queue.Queue()  # Clear any old messages
         st.session_state.flow_state = initialize_flow_state()
         st.session_state.listener_started = False

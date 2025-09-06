@@ -1,16 +1,13 @@
-# frontend/components/workflow_visualizer.py
-
 import streamlit as st
-from streamlit_flow_component import (
+
+from streamlit_flow import (
     StreamlitFlowState,
     StreamlitFlowNode,
     StreamlitFlowEdge,
     streamlit_flow,
 )
-from streamlit_flow_component.layouts import LayeredLayout
+from streamlit_flow.layouts import LayeredLayout
 
-# --- Style Definitions ---
-# Define consistent styling for different states to ensure a clear visual language.
 STYLE_PENDING = {"backgroundColor": "#E0E0E0", "color": "#333333"}
 STYLE_ACTIVE = {
     "backgroundColor": "#BBDEFB",
@@ -37,11 +34,47 @@ def initialize_flow_state() -> StreamlitFlowState:
     Returns:
         StreamlitFlowState: An object containing the initial nodes and edges.
     """
-    initial_nodes =
 
-    initial_edges =
+def initialize_flow_state() -> StreamlitFlowState:
+    initial_nodes = [
+        StreamlitFlowNode(
+            id="analysis_agent",
+            pos=(0, 0),
+            data={"label": "Analysis Agent"},
+            style=STYLE_PENDING,
+        ),
+        StreamlitFlowNode(
+            id="monitoring_agent",
+            pos=(250, 0),
+            data={"label": "Monitoring Agent"},
+            style=STYLE_PENDING,
+        ),
+        StreamlitFlowNode(
+            id="remediation_agent",
+            pos=(500, 0),
+            data={"label": "Remediation Agent"},
+            style=STYLE_PENDING,
+        ),
+    ]
+
+    initial_edges = [
+        StreamlitFlowEdge(
+    id="edge_analysis_to_monitoring",
+    source="analysis_agent",
+    target="monitoring_agent",
+    style=EDGE_STYLE_PENDING,
+),
+
+    StreamlitFlowEdge(
+    id="edge_monitoring_to_remediation",
+    source="monitoring_agent",
+    target="remediation_agent",
+    style=EDGE_STYLE_PENDING,
+),
+    ]
 
     return StreamlitFlowState(nodes=initial_nodes, edges=initial_edges)
+
 
 
 def update_flow_state(
