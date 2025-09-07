@@ -1,6 +1,7 @@
 import asyncio
 import json
-from typing import Dict, AsyncGenerator
+from typing import Dict, AsyncGenerator, Any
+from .messages import Message
 
 class stream_manager:
     def __init__(self):
@@ -11,14 +12,38 @@ class stream_manager:
         self.queues[workflow_id] = asyncio.Queue()
         self.active[workflow_id] = True
 
-    async def publish(self, workflow_id: str, agent_name: str, status: str, data: any):
+    async def publish(self, workflow_id: str, agent_name: str, status: str, data: Any, input_: str = "", output: str = ""):
         if self.active.get(workflow_id):
-            message = {
-                "agent_name": agent_name,
-                "status": status, # e.g., "STARTING", "THINKING", "INVOKING_TOOL", "COMPLETED"
-                "data": str(data)
-            }
-            await self.queues[workflow_id].put(json.dumps(message))
+
+            # Serialize data to string if not already
+            if not isinstance(data, str):
+                data = json.dumps(data)
+            msg_obj = Message(
+                agent_name=agent_name,
+                status=status,
+                input=input_,
+                output=output,
+                data=data
+            )
+
+            await self.queues[workflow_id].put(msg_obj.json())
+
+            # message = Message(
+            #     agent_name=agent_name,
+            #     status=status,
+            #     input=input_,
+            #     output=output,
+            #     data=data
+            # )
+
+            # await self.queues[workflow_id].put(message.json())
+
+    async def finish(self, workflow_id: str):
+        if self.active.get(workflow_id):
+            self.active[workflow_id] = False
+            await self.queues[workflow_id].put(None) # Sentinel value to end subscription
+
+
 
     async def finish(self, workflow_id: str):
         if self.active.get(workflow_id):
@@ -34,8 +59,7 @@ class stream_manager:
             message = await queue.get()
             if message is None: # Sentinel value received
                 break
-            yield f"data: {message}\n\n"
-        
+            yield message  # Yield only the JSON string
         # Clean up the queue after the stream is finished
         del self.queues[workflow_id]
 

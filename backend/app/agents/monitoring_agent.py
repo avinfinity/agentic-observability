@@ -24,7 +24,7 @@ class MonitoringTools:
         description="Checks the current operational status of a system component.",
         name="check_system_status",
     )
-    def check_system_status(self, component_id: str) -> Literal:
+    def check_system_status(self, component_id: str) -> str:
         """
         A mock function to simulate checking a system's status.
         
@@ -36,7 +36,7 @@ class MonitoringTools:
         """
         print(f"Monitoring: Checking status for component '{component_id}'...")
         # Simulate a random status for demonstration purposes.
-        status = random.choice()
+        status = random.choice(["OK", "WARNING", "CRITICAL"])
         print(f"Monitoring: Status for '{component_id}' is {status}.")
         return status
 
@@ -58,7 +58,6 @@ def create_monitoring_agent(
         An instance of ChatCompletionAgent configured for monitoring tasks.
     """
     return ChatCompletionAgent(
-        service_id="default",
         kernel=kernel,
         name="MonitoringAgent",
         instructions=MONITORING_AGENT_INSTRUCTIONS,

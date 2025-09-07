@@ -1,4 +1,6 @@
+
 import streamlit as st
+import re
 
 from streamlit_flow import (
     StreamlitFlowState,
@@ -38,43 +40,81 @@ def initialize_flow_state() -> StreamlitFlowState:
 def initialize_flow_state() -> StreamlitFlowState:
     initial_nodes = [
         StreamlitFlowNode(
-            id="analysis_agent",
+            id="AnalysisAgent",
             pos=(0, 0),
-            data={"label": "Analysis Agent"},
+            data={"label": "Analysis Agent", "base_label": "Analysis Agent"},
             style=STYLE_PENDING,
         ),
         StreamlitFlowNode(
-            id="monitoring_agent",
+            id="MonitoringAgent",
             pos=(250, 0),
-            data={"label": "Monitoring Agent"},
+            data={"label": "Monitoring Agent", "base_label": "Monitoring Agent"},
             style=STYLE_PENDING,
         ),
         StreamlitFlowNode(
-            id="remediation_agent",
+            id="RemediationAgent",
             pos=(500, 0),
-            data={"label": "Remediation Agent"},
+            data={"label": "Remediation Agent", "base_label": "Remediation Agent"},
             style=STYLE_PENDING,
         ),
     ]
 
     initial_edges = [
         StreamlitFlowEdge(
-    id="edge_analysis_to_monitoring",
-    source="analysis_agent",
-    target="monitoring_agent",
-    style=EDGE_STYLE_PENDING,
-),
-
-    StreamlitFlowEdge(
-    id="edge_monitoring_to_remediation",
-    source="monitoring_agent",
-    target="remediation_agent",
-    style=EDGE_STYLE_PENDING,
-),
+            id="edge_analysis_to_monitoring",
+            source="AnalysisAgent",
+            target="MonitoringAgent",
+            style=EDGE_STYLE_PENDING,
+        ),
+        StreamlitFlowEdge(
+            id="edge_monitoring_to_remediation",
+            source="MonitoringAgent",
+            target="RemediationAgent",
+            style=EDGE_STYLE_PENDING,
+        ),
     ]
 
     return StreamlitFlowState(nodes=initial_nodes, edges=initial_edges)
 
+
+def update_flow_node_by_message(state: StreamlitFlowState, message: dict) -> StreamlitFlowState:
+    """
+    Updates a node's style and label based on a single message from the orchestrator.
+    """
+    content = message.get("data", "")
+    if not isinstance(content, str):
+        return state
+
+    agent_map = {
+        "MonitoringAgent": {"invoked": "Invoking MonitoringAgent", "returned": r"MonitoringAgent returned: (.*)"},
+        "AnalysisAgent": {"invoked": "Invoking AnalysisAgent", "returned": r"AnalysisAgent returned: (.*)"},
+        "RemediationAgent": {"invoked": "Invoking RemediationAgent", "returned": r"RemediationAgent returned: (.*)"},
+    }
+
+    for agent_name, patterns in agent_map.items():
+        for node in state.nodes:
+            if node.id == agent_name:
+                # Check if agent is invoked
+                if patterns["invoked"] in content:
+                    node.style = STYLE_ACTIVE
+                    node.data['label'] = f"{node.data['base_label']}\nStatus: In Progress..."
+                    for edge in state.edges:
+                        if edge.target == agent_name:
+                            edge.style = EDGE_STYLE_ACTIVE
+                            edge.animated = True
+                
+                # Check if agent returned a result
+                match = re.search(patterns["returned"], content, re.DOTALL)
+                if match:
+                    output = match.group(1).strip()
+                    node.style = STYLE_COMPLETED
+                    summary = (output[:40] + '...') if len(output) > 40 else output
+                    node.data['label'] = f"{node.data['base_label']}\nResult: {summary}"
+                    for edge in state.edges:
+                        if edge.target == agent_name:
+                            edge.style = EDGE_STYLE_COMPLETED
+                            edge.animated = False
+    return state
 
 
 def update_flow_state(

@@ -62,6 +62,7 @@ async def stream_workflow_status(request: Request, workflow_id: str):
             if await request.is_disconnected():
                 print(f"Client disconnected from workflow {workflow_id}")
                 break
-            yield message
+            # Yield as dict for proper SSE formatting
+            yield {"data": message}
             
     return EventSourceResponse(event_generator())

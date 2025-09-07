@@ -65,7 +65,6 @@ def create_remediation_agent(
         An instance of ChatCompletionAgent configured for remediation tasks.
     """
     return ChatCompletionAgent(
-        service_id="default",
         kernel=kernel,
         name="RemediationAgent",
         instructions=REMEDIATION_AGENT_INSTRUCTIONS,
