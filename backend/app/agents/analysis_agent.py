@@ -21,6 +21,7 @@ Instructions:
 - If multiple root causes are possible, list them all.  
 - For **warnings**, also try to suggest potential impact and what could trigger them.  
 - If the log message is too vague, output: `"Root cause could not be determined with given information."`  
+- In the output, remove the duplicate entries if any.
 
 Output format (JSON):  
 {
@@ -79,10 +80,8 @@ class AnalysisTools:
       chat_history.add_system_message(ANALYSIS_AGENT_INSTRUCTIONS)
       chat_history.add_user_message(error_logs)
 
-
       root_cause = await self.kernel.get_service().get_chat_message_contents(chat_history = chat_history, settings=execution_settings)
 
-      await stream_manager.publish(workflow_id, "AnalysisAgent", "COMPLETED", "Analysis completed successfully.")
       return json.dumps(root_cause[0].inner_content.to_dict()['candidates'][0]['content']['parts'][0]['text'])
     except Exception as e:
       return f"AnalysisAgent failed : {e}"

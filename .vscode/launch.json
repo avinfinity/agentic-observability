@@ -4,6 +4,7 @@
     // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
+        
         {
             "name": "Python Debugger: FastAPI",
             "type": "debugpy",
@@ -18,6 +19,21 @@
                 "PYTHONPATH": "${workspaceFolder}/backend"
             },
             "jinja": true
+        },
+         {
+            "name": "Python Debugger: Streamlit",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "streamlit",
+            "args": [
+                "run",
+                "app.py"
+            ],
+            "cwd": "${workspaceFolder}/frontend",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/frontend"
+            },
         }
+
     ]
 }

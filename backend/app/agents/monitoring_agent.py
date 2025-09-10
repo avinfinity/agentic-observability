@@ -24,6 +24,7 @@ Instructions:
 - Return only the relevant log lines that are errors or warnings.  
 - If possible, include the **timestamp, service name, and error/warning message** in a structured format.  
 - If no errors or warnings are found, respond with: "No error or warning logs found."  
+- In the output, remove the duplicate entries if any.
 
 Output format (JSON):  
 {
@@ -68,7 +69,6 @@ class MonitoringTools:
         # logs = data.get("logs")
         # workflow_id = data.get("workflow_id")
 
-        await stream_manager.publish(workflow_id, "MonitoringAgent", "WORKING", "Monitoring in progress...")
         execution_settings = GoogleAIChatPromptExecutionSettings()
 
         chat_history = ChatHistory()
@@ -77,7 +77,6 @@ class MonitoringTools:
 
         error_logs = await self.kernel.get_service().get_chat_message_contents(chat_history = chat_history, settings=execution_settings)
 
-        await stream_manager.publish(workflow_id, "MonitoringAgent", "Completed", "Monitoring completed")
         #print(error_logs)
         return json.dumps(error_logs[0].inner_content.to_dict()['candidates'][0]['content']['parts'][0]['text'])
 

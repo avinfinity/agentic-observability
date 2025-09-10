@@ -70,7 +70,7 @@ async def run_workflow(workflow_id: str, initial_logs: str):
         initial_logs: The initial set of logs.
     """
     try:
-        await stream_manager.publish(workflow_id, "OrchestratorAgent", "STARTING", f"Workflow started for id: '{workflow_id}'", input_="", output="")
+        await stream_manager.publish(workflow_id, "OrchestratorAgent", "WORKING", f"Workflow started for id: '{workflow_id}'", input_="", output="")
 
         kernel = initialize_kernel()
 
@@ -89,18 +89,26 @@ async def run_workflow(workflow_id: str, initial_logs: str):
         args['logs'] = initial_logs
 
         error_logs = ""
+        await stream_manager.publish(workflow_id, monitoring_agent.name, "WORKING", f"Workflow started for id: '{workflow_id}'", input_="", output="")
         async for msg in monitoring_agent.invoke(messages= initial_logs, arguments=args, kernel=kernel):
             error_logs += msg.content.inner_content.text
         args['error_logs'] = error_logs
+        await stream_manager.publish(workflow_id, monitoring_agent.name, "COMPLETED", data=error_logs, input_="", output="")
+        print(error_logs)
 
         root_cause = ""
+        await stream_manager.publish(workflow_id, analysis_agent.name, "WORKING", f"Workflow started for id: '{workflow_id}'", input_="", output="")
         async for msg in analysis_agent.invoke(messages=error_logs, arguments=args, kernel=kernel):
             root_cause += msg.content.inner_content.text
         args['root_cause'] = root_cause
+        await stream_manager.publish(workflow_id, analysis_agent.name, "COMPLETED", data=root_cause, input_="", output="")
+        print(root_cause)
 
         kubectl_commands = ""
+        await stream_manager.publish(workflow_id, remediation_agent.name, "WORKING", f"Workflow started for id: '{workflow_id}'", input_="", output="")
         async for msg in remediation_agent.invoke(messages=root_cause, arguments=args, kernel=kernel):
             kubectl_commands += msg.content.inner_content.text
+        await stream_manager.publish(workflow_id, remediation_agent.name, "COMPLETED", data=kubectl_commands, input_="", output="")
         print(kubectl_commands)
 
     except Exception as e:

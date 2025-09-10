@@ -34,6 +34,7 @@ async def start_workflow(
     last_5_mins_logs = LogsFetcher().fetch_last_5min_logs()
 
     print(last_5_mins_logs)
+    print("-----------------------------------------------------------------")
     
     # Create a dedicated message queue for this workflow run
     await stream_manager.create_queue(workflow_id)

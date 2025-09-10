@@ -22,6 +22,7 @@ Instructions:
 - If remediation cannot be automated via kubectl, provide a clear explanation and any manual steps needed.  
 - Always explain briefly what each command does.  
 - If no relevant kubectl or flagd command applies, respond with: `"No direct kubectl/flagd remediation available. Manual investigation required."`
+- In the output, remove the duplicate entries if any.
 
 Output format (JSON):
 {
@@ -74,11 +75,8 @@ class RemediationTools:
         chat_history.add_system_message(REMEDIATION_AGENT_INSTRUCTIONS)
         chat_history.add_user_message(root_cause)
 
-        await stream_manager.publish(workflow_id, "RemediationAgent", "WORKING", "Remediation in progress...")
 
         kubectl_commands = await self.kernel.get_service().get_chat_message_contents(chat_history = chat_history, settings=execution_settings)
-
-        await stream_manager.publish(workflow_id, "RemediationAgent", "COMPLETED", "Remediation completed")
 
         return json.dumps(kubectl_commands[0].inner_content.to_dict()['candidates'][0]['content']['parts'][0]['text'])
 
