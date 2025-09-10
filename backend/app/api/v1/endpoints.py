@@ -3,6 +3,7 @@ import uuid
 from fastapi import APIRouter, Request, BackgroundTasks
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
+from app.core.logs_fetcher import LogsFetcher
 
 # Import the core orchestration logic and the stream manager
 from app.orchestration.orchestrator import run_workflow
@@ -29,6 +30,10 @@ async def start_workflow(
     It immediately returns the workflow ID to the client.
     """
     workflow_id = str(uuid.uuid4())
+
+    last_5_mins_logs = LogsFetcher().fetch_last_5min_logs()
+
+    print(last_5_mins_logs)
     
     # Create a dedicated message queue for this workflow run
     await stream_manager.create_queue(workflow_id)
@@ -37,7 +42,7 @@ async def start_workflow(
     # This allows the API to return a response immediately without waiting
     # for the entire agent process to complete.
     background_tasks.add_task(
-        run_workflow, workflow_id=workflow_id, initial_prompt=request.prompt
+        run_workflow, workflow_id=workflow_id, initial_logs=last_5_mins_logs
     )
     
     return {"workflow_id": workflow_id}

@@ -1,44 +1,85 @@
 import random
 from typing import Literal
+import json
 import semantic_kernel as sk
 from semantic_kernel.agents import ChatCompletionAgent
+from semantic_kernel.contents import ChatHistory
 from semantic_kernel.functions import kernel_function, KernelPlugin
+
+from app.utils.stream_manager import stream_manager
+
+from semantic_kernel.connectors.ai.google.google_ai import GoogleAIChatPromptExecutionSettings
+
 
 # --- Agent Instructions ---
 # Defines the agent's specific role and constraints.
 # It MUST use the provided tool to accomplish its task.
 MONITORING_AGENT_INSTRUCTIONS = """
-You are a system monitoring agent. 
-Your sole responsibility is to check the operational status of a given system component.
-You MUST use the `MonitoringTools.check_system_status` tool to get the status.
-After using the tool, report only the status (e.g., 'OK', 'WARNING', or 'CRITICAL') and nothing else.
+You are a log analysis assistant specialized in reading OpenTelemetry (OTel) logs.  
+Your task is to carefully examine the provided log entries and identify any that contain **errors** or **warnings**.  
+You MUST use the `MonitoringTools.check_system_status` tool to find the error logs
+
+Instructions:  
+- Look for log entries with severity levels such as "ERROR", "ERR", "WARN", "WARNING", or similar indicators.  
+- Return only the relevant log lines that are errors or warnings.  
+- If possible, include the **timestamp, service name, and error/warning message** in a structured format.  
+- If no errors or warnings are found, respond with: "No error or warning logs found."  
+
+Output format (JSON):  
+{
+  "errors": [
+    {
+      "timestamp": "<timestamp>",
+      "service": "<service_name>",
+      "message": "<error_message>"
+    }
+  ],
+  "warnings": [
+    {
+      "timestamp": "<timestamp>",
+      "service": "<service_name>",
+      "message": "<warning_message>"
+    }
+  ]
+}
 """
 
 class MonitoringTools:
+    def __init__(self, kernel : sk.Kernel):
+        self.kernel = kernel
     """
     A plugin that provides tools for the MonitoringAgent.
-    In a real-world scenario, this would query a monitoring service like
-    Prometheus, Datadog, or a cloud provider's health API.
     """
     @kernel_function(
         description="Checks the current operational status of a system component.",
         name="check_system_status",
     )
-    def check_system_status(self, component_id: str) -> str:
+    async def check_system_status(self, logs:str,workflow_id:str) -> str:
         """
-        A mock function to simulate checking a system's status.
-        
+        Checks the current operational status of a system component.
+
         Args:
-            component_id: The identifier of the system component to check.
+            logs: The log data to analyze (OTEL format, JSON lines).
+            workflow_id: workflow_id.
 
         Returns:
-            The current status as 'OK', 'WARNING', or 'CRITICAL'.
+            str: JSON string with errors and warnings found in the logs.
         """
-        print(f"Monitoring: Checking status for component '{component_id}'...")
-        # Simulate a random status for demonstration purposes.
-        status = random.choice(["OK", "WARNING", "CRITICAL"])
-        print(f"Monitoring: Status for '{component_id}' is {status}.")
-        return status
+        # logs = data.get("logs")
+        # workflow_id = data.get("workflow_id")
+
+        await stream_manager.publish(workflow_id, "MonitoringAgent", "WORKING", "Monitoring in progress...")
+        execution_settings = GoogleAIChatPromptExecutionSettings()
+
+        chat_history = ChatHistory()
+        chat_history.add_system_message(MONITORING_AGENT_INSTRUCTIONS)
+        chat_history.add_user_message(logs)
+
+        error_logs = await self.kernel.get_service().get_chat_message_contents(chat_history = chat_history, settings=execution_settings)
+
+        await stream_manager.publish(workflow_id, "MonitoringAgent", "Completed", "Monitoring completed")
+        #print(error_logs)
+        return json.dumps(error_logs[0].inner_content.to_dict()['candidates'][0]['content']['parts'][0]['text'])
 
 def create_monitoring_agent(
     kernel: sk.Kernel,
