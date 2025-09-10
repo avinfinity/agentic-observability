@@ -2,15 +2,16 @@
 name = "multi-agent-frontend"
 version = "0.1.0"
 description = "Streamlit frontend for the multi-agent orchestration system."
-authors =
+authors = ["Avinash Rai <avinash.rai@example.com>"]
 readme = "README.md"
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.11"
 streamlit = "^1.35.0"
 requests = "^2.31.0"
 sseclient-py = "^1.8.0"
-streamlit-flow-component = "^1.6.2"
+streamlit-flow-component = "^1.6.1"
 
 
 [build-system]

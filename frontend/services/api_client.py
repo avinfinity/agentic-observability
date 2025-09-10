@@ -23,7 +23,7 @@ class APIClient:
         """
         self.base_url = base_url
 
-    def start_workflow(self, prompt: str) -> str:
+    def start_workflow(self) -> str:
         """
         Sends a request to the backend to start a new agent workflow.
 
@@ -37,7 +37,7 @@ class APIClient:
             requests.exceptions.RequestException: If the API call fails.
         """
         start_url = f"{self.base_url}/api/v1/workflows/start"
-        response = requests.post(start_url, json={"prompt": prompt})
+        response = requests.post(start_url)
         
         # Raise an exception for bad status codes (4xx or 5xx)
         response.raise_for_status()
@@ -69,7 +69,7 @@ class APIClient:
                     if event.data:
                         message = json.loads(event.data)
                         message_queue.put(message)
-            
+
             except Exception as e:
                 # Log the error and signal the end of the stream
                 print(f"Error in SSE listener thread: {e}")

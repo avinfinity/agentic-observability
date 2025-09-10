@@ -1,16 +1,15 @@
-# frontend/components/workflow_visualizer.py
 
 import streamlit as st
-from streamlit_flow_component import (
+import re
+
+from streamlit_flow import (
     StreamlitFlowState,
     StreamlitFlowNode,
     StreamlitFlowEdge,
     streamlit_flow,
 )
-from streamlit_flow_component.layouts import LayeredLayout
+from streamlit_flow.layouts import ManualLayout
 
-# --- Style Definitions ---
-# Define consistent styling for different states to ensure a clear visual language.
 STYLE_PENDING = {"backgroundColor": "#E0E0E0", "color": "#333333"}
 STYLE_ACTIVE = {
     "backgroundColor": "#BBDEFB",
@@ -37,59 +36,115 @@ def initialize_flow_state() -> StreamlitFlowState:
     Returns:
         StreamlitFlowState: An object containing the initial nodes and edges.
     """
-    initial_nodes =
 
-    initial_edges =
+    initial_nodes = [
+        StreamlitFlowNode(
+            id="LLM",
+            pos=(400, 225),
+            targetPosition="left",
+            data={"label": "LLM", "base_label": "LLM", "icon": "components/llm_icon.png"},
+            style={"backgroundColor": "#FFF3E0", "color": "#6D4C41", "border": "2px solid #FF9800", "boxShadow": "0 0 10px #FF9800"},
+        ),
+        StreamlitFlowNode(
+            id="MonitoringAgent",
+            pos=(0, 0),
+            data={"label": "Monitoring Agent", "base_label": "Monitoring Agent", "spinner": "components/spinner.gif", "tick": "components/tick.png"},
+            style=STYLE_PENDING,
+        ),
+        StreamlitFlowNode(
+            id="AnalysisAgent",
+            pos=(0, 150),
+            data={"label": "Analysis Agent", "base_label": "Analysis Agent", "spinner": "components/spinner.gif", "tick": "components/tick.png"},
+            style=STYLE_PENDING,
+        ),
+        StreamlitFlowNode(
+            id="RemediationAgent",
+            pos=(0, 300),
+            data={"label": "Remediation Agent", "base_label": "Remediation Agent", "spinner": "components/spinner.gif", "tick": "components/tick.png"},
+            style=STYLE_PENDING,
+        ),
+    ]
+
+    initial_edges = [
+        StreamlitFlowEdge(
+            id="edge_analysis_to_llm",
+            source="AnalysisAgent",
+            target="LLM",
+            style=EDGE_STYLE_PENDING,
+            animated=True,
+            type="straight",
+        ),
+        StreamlitFlowEdge(
+            id="edge_monitoring_to_llm",
+            source="MonitoringAgent",
+            target="LLM",
+            style=EDGE_STYLE_PENDING,
+            animated=True,
+            type="straight",
+        ),
+        StreamlitFlowEdge(
+            id="edge_remediation_to_llm",
+            source="RemediationAgent",
+            target="LLM",
+            style=EDGE_STYLE_PENDING,
+            animated=True,
+            type="straight",
+        ),
+        # Directed straight edges between agents
+        StreamlitFlowEdge(
+            id="edge_analysis_to_monitoring",
+            source="MonitoringAgent",
+            target="AnalysisAgent",
+            style=EDGE_STYLE_PENDING,
+            animated=False,
+            markerEnd={"type": "arrowclosed", "color": "#1E88E5", "width": 32, "height": 32},
+            type="straight",
+        ),
+        StreamlitFlowEdge(
+            id="edge_monitoring_to_remediation",
+            source="AnalysisAgent",
+            target="RemediationAgent",
+            style=EDGE_STYLE_PENDING,
+            animated=False,
+            markerEnd={"type": "arrowclosed", "color": "#1E88E5", "width": 32, "height": 32},
+            type="straight",
+        ),
+    ]
 
     return StreamlitFlowState(nodes=initial_nodes, edges=initial_edges)
 
 
-def update_flow_state(
-    state: StreamlitFlowState, message: dict
-) -> StreamlitFlowState:
+def update_flow_node_by_message(state: StreamlitFlowState, agent_name: str, status: str, content:str) -> StreamlitFlowState:
     """
-    Updates the visual state of the flow diagram based on a new message.
-
-    This function is the core of the dynamic visualization. It takes the current
-    state and a message from the backend, then updates the styles of the
-    corresponding nodes and edges to reflect the new status (e.g., active, completed).
-
-    Args:
-        state (StreamlitFlowState): The current state of the diagram.
-        message (dict): The JSON message received from the backend SSE stream.
-
-    Returns:
-        StreamlitFlowState: The new, updated state object.
+    Updates a node's style and label based on a single message from the orchestrator.
     """
-    agent_name = message.get("agent_name")
-    status = message.get("status")
-
     if not agent_name or not status:
         return state
 
-    # Find the node and edge to update
+    agent_node = None
     for node in state.nodes:
         if node.id == agent_name:
-            if status in ("STARTING", "THINKING", "STREAMING"):
-                node.style = STYLE_ACTIVE
-                # Also activate the edge leading to this node
-                for edge in state.edges:
-                    if edge.target == agent_name:
-                        edge.style = EDGE_STYLE_ACTIVE
-                        edge.animated = True
-            elif status == "COMPLETED":
-                node.style = STYLE_COMPLETED
-                # De-animate the edge but keep it highlighted
-                for edge in state.edges:
-                    if edge.target == agent_name:
-                        edge.style = EDGE_STYLE_COMPLETED
-                        edge.animated = False
-            elif status == "ERROR":
-                node.style = STYLE_ERROR
-                for edge in state.edges:
-                    if edge.target == agent_name:
-                        edge.animated = False
+            agent_node = node
+            break
+    
+    if not agent_node:
+        return state
+    else:
+        if status in ('WORKING', 'THINKING'):
+            agent_node.style = STYLE_ACTIVE
+            for edge in state.edges:
+                if edge.target == agent_name:
+                    edge.style = EDGE_STYLE_ACTIVE
+                    edge.animated = True
+        elif status == 'COMPLETED':
+            agent_node.style = STYLE_COMPLETED
+            for edge in state.edges:
+                if edge.target == agent_name:
+                    edge.style = EDGE_STYLE_COMPLETED
+                    edge.animated = False
 
+        agent_node.data['label'] = f"{agent_node.data['base_label']}\n{content}"
+    
     return state
 
 
@@ -103,11 +158,18 @@ def render_flow(state: StreamlitFlowState):
     streamlit_flow(
         key="agent_flow",
         state=state,
-        height=650,
+        height=400,
         fit_view=True,
         show_controls=False,
-        show_minimap=True,
-        # LayeredLayout automatically arranges nodes for a clean look [1]
-        layout=LayeredLayout(direction="down", node_layer_spacing=150),
-        get_node_on_click=False,
+        show_minimap=False,
+        layout=ManualLayout(),
+        get_node_on_click=True,
+        get_edge_on_click=True,
+        pan_on_drag=True,
+        allow_zoom=True,
+        min_zoom=0.5,
+        enable_pane_menu=False,
+        enable_node_menu=False,
+        enable_edge_menu=False,
+        hide_watermark=True,
     )
