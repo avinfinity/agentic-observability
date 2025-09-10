@@ -1,11 +1,7 @@
-# frontend/app.py
-
 import streamlit as st
 import os
 import queue
 import time
-import re
-
 from services.api_client import APIClient
 from components.workflow_visualizer import (
     initialize_flow_state,
@@ -16,19 +12,6 @@ from components.workflow_visualizer import (
 # --- Configuration ---
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
 
-
-def reset_workflow_state():
-    """Resets all session state variables for a new workflow run."""
-    st.session_state.messages = queue.Queue()
-    st.session_state.flow_state = initialize_flow_state()
-    st.session_state.listener_started = False
-    st.session_state.workflow_id = None
-    st.session_state.agent_details = {
-        "MonitoringAgent": {"input": "", "output": "", "status": "pending", "content": ""},
-        "AnalysisAgent": {"input": "", "output": "", "status": "pending", "content": ""},
-        "RemediationAgent": {"input": "", "output": "", "status": "pending", "content": ""},
-        "OrchestratorAgent": {"input": "", "output": "", "status": "pending", "content": ""}
-    }
 if "workflow_id" not in st.session_state:
     st.session_state.workflow_id = None
 if "listener_started" not in st.session_state:
@@ -45,20 +28,27 @@ if "agent_details" not in st.session_state:
 if "api_client" not in st.session_state:
     st.session_state.api_client = APIClient(BACKEND_URL)
 
+def reset_workflow_state():
+    """Resets all session state variables for a new workflow run."""
+    st.session_state.messages = queue.Queue()
+    st.session_state.flow_state = initialize_flow_state()
+    st.session_state.listener_started = False
+    st.session_state.workflow_id = None
+    st.session_state.agent_details = {
+        "MonitoringAgent": {"input": "", "output": "", "status": "pending", "content": ""},
+        "AnalysisAgent": {"input": "", "output": "", "status": "pending", "content": ""},
+        "RemediationAgent": {"input": "", "output": "", "status": "pending", "content": ""},
+        "OrchestratorAgent": {"input": "", "output": "", "status": "pending", "content": ""}
+    }
+
 with st.sidebar:
     st.header("Control Panel")
     with st.expander("Start Workflow", expanded=False):
-        prompt_input = st.text_area(
-            "Enter the system issue to resolve:",
-            "The primary database server is reporting high latency and occasional connection timeouts.",
-            height=150,
-            key="prompt_input",
-        )
         if st.button("🚀 Start Agent Workflow", use_container_width=True, type="primary"):
             reset_workflow_state()
             with st.spinner("Initializing workflow..."):
                 try:
-                    workflow_id = st.session_state.api_client.start_workflow(prompt_input)
+                    workflow_id = st.session_state.api_client.start_workflow()
                     st.session_state.workflow_id = workflow_id
                     st.success(f"Workflow started with ID: `{workflow_id}`")
                     st.session_state.api_client.listen_to_stream(
@@ -69,6 +59,9 @@ with st.sidebar:
                     st.rerun()
                 except Exception as e:
                     st.error(f"Failed to start workflow: {e}")
+
+        if st.button("Refresh workflow", use_container_width=True, type="secondary"):
+            st.rerun()
 
 # --- Workflow Visualization at Top ---
 st.title("🤖 Multi-Agent System Orchestrator")
@@ -100,7 +93,7 @@ def parse_and_update_state(message):
     status = message.get("status")
     content = message.get("data", "")
 
-    print("DEBUG MESSAGE RECEIVED:", message.agent_name, message.status)
+    print("DEBUG MESSAGE RECEIVED:", agent, status)
 
     st.session_state.agent_details[agent]["status"] = status
     st.session_state.agent_details[agent]["content"] = content
@@ -119,6 +112,7 @@ def process_messages():
             message = st.session_state.messages.get_nowait()
             if message is None:
                 st.session_state.listener_started = False
+                st.rerun()
                 st.toast("Workflow finished!")
                 break
             parse_and_update_state(message)
@@ -130,14 +124,12 @@ def process_messages():
 
 process_messages()
 
-
 with flow_placeholder:
     if st.session_state.flow_state:
         render_flow(st.session_state.flow_state)
-        print("Rendered flow called")
     else:
         st.info("Enter a prompt and start the workflow to see the visualization.")
 
 if st.session_state.listener_started:
-    time.sleep(0.1)
+    time.sleep(1)
     st.rerun()

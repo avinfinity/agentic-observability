@@ -41,6 +41,7 @@ def initialize_flow_state() -> StreamlitFlowState:
         StreamlitFlowNode(
             id="LLM",
             pos=(400, 225),
+            targetPosition="left",
             data={"label": "LLM", "base_label": "LLM", "icon": "components/llm_icon.png"},
             style={"backgroundColor": "#FFF3E0", "color": "#6D4C41", "border": "2px solid #FF9800", "boxShadow": "0 0 10px #FF9800"},
         ),
@@ -143,6 +144,7 @@ def update_flow_node_by_message(state: StreamlitFlowState, agent_name: str, stat
                     edge.animated = False
 
         agent_node.data['label'] = f"{agent_node.data['base_label']}\n{content}"
+    
     return state
 
 

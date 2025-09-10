@@ -14,13 +14,12 @@ router = APIRouter()
 # --- Pydantic Models ---
 # Define a Pydantic model for the request body to ensure type safety.
 class WorkflowStartRequest(BaseModel):
-    prompt: str
+    pass
 
 # --- API Endpoints ---
 
 @router.post("/workflows/start", status_code=202)
-async def start_workflow(
-    request: WorkflowStartRequest, background_tasks: BackgroundTasks
+async def start_workflow(background_tasks: BackgroundTasks
 ):
     """
     Starts a new agent workflow.
