@@ -88,6 +88,8 @@ async def run_workflow(workflow_id: str, initial_logs: str):
         args['workflow_id'] = workflow_id
         args['logs'] = initial_logs
 
+        print(initial_logs)
+
         error_logs = await invoke_agent(monitoring_agent, args, kernel, workflow_id, initial_logs, "error_logs")
         root_cause = await invoke_agent(analysis_agent, args, kernel, workflow_id, error_logs, "root_cause")
         kubectl_commands = await invoke_agent(remediation_agent, args, kernel, workflow_id, root_cause, "kubectl_commands")
@@ -101,11 +103,17 @@ async def run_workflow(workflow_id: str, initial_logs: str):
 
 async def invoke_agent(agent:ChatCompletionAgent, args:KernelArguments, kernel:sk.Kernel, workflow_id: str, initial_logs: str, arg_key: str = ""):
 
+    if initial_logs is None or initial_logs == "":
+        return ""
+    
     output_logs = ""
     await stream_manager.publish(workflow_id, agent.name, "WORKING", f"Workflow started for id: '{workflow_id}'")
 
     async for msg in agent.invoke(messages= initial_logs, arguments=args, kernel=kernel):
-        output_logs += msg.content.inner_content.text
+        if msg is not None and msg.content is not None and msg.content.inner_content is not None and msg.content.inner_content.text is not None:
+            output_logs += msg.content.inner_content.text
+        else:
+            print("Received empty message or content.")
 
     await stream_manager.publish(workflow_id, agent.name, "COMPLETED", data=output_logs)
     

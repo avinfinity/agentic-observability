@@ -15,17 +15,27 @@ from semantic_kernel.connectors.ai.google.google_ai import GoogleAIChatPromptExe
 # Defines the agent's specific role and constraints.
 # It MUST use the provided tool to accomplish its task.
 MONITORING_AGENT_INSTRUCTIONS = """
-You are a log analysis assistant specialized in reading OpenTelemetry (OTel) logs.  
-Your task is to carefully examine the provided log entries and identify any that contain **errors** or **warnings**.  
+You are a critical log analysis assistant specialized in reading OpenTelemetry (OTel) logs.  
+Your task is to carefully examine the provided log entries and identify any that contain **errors**, **warnings**, or **critical issues**.  
 You MUST use the `MonitoringTools.check_system_status` tool to find the error logs
 
 Instructions:  
-- Look for log entries with severity levels such as "ERROR", "ERR", "WARN", "WARNING", or similar indicators.  
-- Return only the relevant log lines that are errors or warnings.  
-- If possible, include the **timestamp, service name, and error/warning message** in a structured format.  
+- Look for log entries containing ANY of these critical keywords (case-insensitive):
+  
+  **ERROR KEYWORDS:** error, err, exception, fatal, critical, fail, failure, failed, crash, crashed, panic, abort, aborted, invalid, denied, refused, rejected, timeout, timed out, unreachable, unavailable, down, offline
+  
+  **WARNING KEYWORDS:** warn, warning, caution, alert, notice, deprecated, slow, lag, delay, retry, retries, high, elevated, spike, threshold, limit, quota, exceed, overload, degraded, unstable
+  
+  **PERFORMANCE KEYWORDS:** high cpu, high memory, high load, high latency, high response time, memory leak, disk full, space low, connection refused, too many connections, rate limit
+  
+  **HTTP/API KEYWORDS:** 4xx, 5xx, 400, 401, 403, 404, 500, 502, 503, 504, bad request, unauthorized, forbidden, not found, internal server error, bad gateway, service unavailable, gateway timeout
+  
+- Return only the matching log lines that contain these critical indicators.
+- If possible, include the **timestamp, service name, severity level, and error/warning message** in a structured format.  
 - If no errors or warnings are found, respond with: "No error or warning logs found."  
-- In the output, remove the duplicate entries if any.
-- please do not use ''' json ''' or ```json ``` tags in the output.
+- In the output, remove duplicate entries if any.
+- Prioritize FATAL > ERROR > WARNING > NOTICE in severity classification.
+- Please do not use ''' json ''' or ```json ``` tags in the output.
 
 Output format (JSON):  
 {
@@ -53,19 +63,26 @@ class MonitoringTools:
     A plugin that provides tools for the MonitoringAgent.
     """
     @kernel_function(
-        description="Checks the current operational status of a system component.",
+        description="Analyzes logs for critical issues including errors, warnings, failures, high resource usage, and system anomalies using comprehensive keyword detection.",
         name="check_system_status",
     )
     async def check_system_status(self, logs:str,workflow_id:str) -> str:
         """
-        Checks the current operational status of a system component.
+        Analyzes logs for critical issues and system health problems.
+        
+        Detects:
+        - Errors, exceptions, failures, crashes
+        - Warnings, alerts, performance issues  
+        - High resource usage, timeouts, connection issues
+        - HTTP errors, API failures, authentication problems
+        - System degradation, overloads, rate limiting
 
         Args:
             logs: The log data to analyze (OTEL format, JSON lines).
-            workflow_id: workflow_id.
+            workflow_id: workflow_id for tracking.
 
         Returns:
-            str: JSON string with errors and warnings found in the logs.
+            str: JSON string with comprehensive analysis of errors, warnings, and summary statistics.
         """
         # logs = data.get("logs")
         # workflow_id = data.get("workflow_id")
@@ -86,17 +103,18 @@ def create_monitoring_agent(
     plugin: KernelPlugin,
 ) -> ChatCompletionAgent:
     """
-    Creates the MonitoringAgent with its specialized tools.
+    Creates the MonitoringAgent with enhanced critical issue detection capabilities.
 
-    This agent is the first responder, responsible for checking the initial
-    status of a system component.
+    This agent is the first responder, responsible for comprehensive analysis of
+    system logs to identify errors, warnings, failures, performance issues,
+    and other critical system health indicators.
 
     Args:
         kernel: The Semantic Kernel instance that the agent will use.
-        plugin: The KernelPlugin containing the monitoring tools.
+        plugin: The KernelPlugin containing the enhanced monitoring tools.
 
     Returns:
-        An instance of ChatCompletionAgent configured for monitoring tasks.
+        An instance of ChatCompletionAgent configured for comprehensive monitoring tasks.
     """
     return ChatCompletionAgent(
         kernel=kernel,

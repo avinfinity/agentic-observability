@@ -16,7 +16,7 @@ You will be given a JSON object containing error and warning log entries that we
 Your task is to analyze each entry and suggest the most likely Root Cause(s).  
 
 Instructions:  
-- For each **error** entry, carefully analyze the `message`, `service`, and `timestamp` fields to infer possible causes.  
+- For each entry, carefully analyze the `message`, `service`, and `timestamp` fields to infer possible causes.  
 - Provide a clear and concise explanation of what might have led to the error.  
 - If multiple root causes are possible, list them all.  
 - For **warnings**, also try to suggest potential impact and what could trigger them.  

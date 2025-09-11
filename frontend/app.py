@@ -27,6 +27,12 @@ if "agent_details" not in st.session_state:
     }
 if "api_client" not in st.session_state:
     st.session_state.api_client = APIClient(BACKEND_URL)
+if "log_pull_interval_in_sec" not in st.session_state:
+    st.session_state.log_pull_interval_in_sec = "10"
+if "filter_pattern" not in st.session_state:
+    st.session_state.filter_pattern = "*error* or *ERR* or *warning*"
+if "fetched_logs" not in st.session_state:
+    st.session_state.fetched_logs = ""
 
 def reset_workflow_state():
     """Resets all session state variables for a new workflow run."""
@@ -34,12 +40,15 @@ def reset_workflow_state():
     st.session_state.flow_state = initialize_flow_state()
     st.session_state.listener_started = False
     st.session_state.workflow_id = None
+    st.session_state.fetched_logs = ""
     st.session_state.agent_details = {
         "MonitoringAgent": {"input": "", "output": "", "status": "pending", "content": ""},
         "AnalysisAgent": {"input": "", "output": "", "status": "pending", "content": ""},
         "RemediationAgent": {"input": "", "output": "", "status": "pending", "content": ""},
         "OrchestratorAgent": {"input": "", "output": "", "status": "pending", "content": ""}
     }
+
+st.set_page_config(layout="wide")
 
 with st.sidebar:
     st.header("Control Panel")
@@ -48,7 +57,11 @@ with st.sidebar:
             reset_workflow_state()
             with st.spinner("Initializing workflow..."):
                 try:
-                    logs = st.session_state.api_client.fetch_logs()
+                    logs = st.session_state.api_client.fetch_logs(
+                        pull_interval=st.session_state.log_pull_interval_in_sec,
+                        filter_pattern=st.session_state.filter_pattern
+                    )
+                    st.session_state.fetched_logs = logs
                     st.success(f"Logs fetched successfully!")
                     
                     workflow_id = st.session_state.api_client.start_workflow(logs)
@@ -66,27 +79,56 @@ with st.sidebar:
 
         if st.button("Refresh workflow", use_container_width=True, type="secondary"):
             st.rerun()
+        
+        # Text boxes for configuration
+        st.session_state.log_pull_interval_in_sec = st.text_input(
+            "Log Pull Interval (sec)", 
+            value=st.session_state.log_pull_interval_in_sec,
+            placeholder="Enter interval in seconds"
+        )
+        
+        st.session_state.filter_pattern = st.text_input(
+            "Filter Pattern", 
+            value=st.session_state.filter_pattern,
+            placeholder="Enter filter pattern"
+        )
+
+
+st.title("✨ Multi-Agent Framework for Microservice Observability ✨")
+st.markdown('''
+- AI agents will work together to monitor, analyze, and remediate the infra problems at real-time.
+- Watch their collaboration in real-time below.
+            '''
+)
 
 # --- Workflow Visualization at Top ---
-st.title("🤖 Multi-Agent System Orchestrator")
-st.markdown(
-    "Describe a system issue, and the AI agents will work together to monitor, analyze, and resolve it. "
-    "Watch their collaboration in real-time below."
-)
 flow_placeholder = st.empty()
 
 # --- Tabs for Agent Messages ---
 if st.session_state.workflow_id:
-    tabs = st.tabs(["Monitoring Agent", "Analysis Agent", "Remediation Agent"])
+
+    tabs = st.tabs(["Fetched Logs","Monitoring Agent", "Analysis Agent", "Remediation Agent"])
     agent_keys = ["MonitoringAgent", "AnalysisAgent", "RemediationAgent"]
-    for i, tab in enumerate(tabs):
+    
+    # Handle agent tabs
+    agent_tab_indices = [1, 2, 3]  # Skipping index 0 which is for Fetched Logs
+    for i, tab_index in enumerate(agent_tab_indices):
         details = st.session_state.agent_details.get(agent_keys[i], {})
-        with tab:
+        with tabs[tab_index]:
             st.subheader(agent_keys[i].replace("Agent", " Agent"))
             st.write(f"**Status:** {details.get('status', 'N/A')}")
             last_msg = details.get('content') or "No message yet."
             st.write(f"**Last Message:**")
             st.code(last_msg)
+    
+    # Handle Fetched Logs tab (index 2)
+    with tabs[0]:
+        st.subheader("Fetched Logs")
+        if st.session_state.fetched_logs:
+            st.write("**Logs retrieved from the system:**")
+            st.code(st.session_state.fetched_logs, language="text")
+        else:
+            st.info("No logs have been fetched yet. Start a workflow to see logs.")
 else:
     st.info("Start a workflow to see agent activity.")
 

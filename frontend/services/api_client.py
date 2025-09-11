@@ -22,13 +22,13 @@ class APIClient:
             base_url: The base URL for the FastAPI backend (e.g., "http://localhost:8000").
         """
         self.base_url = base_url
-    
-    def fetch_logs(self):
+
+    def fetch_logs(self, pull_interval: int=10, filter_pattern: str="*error* or *ERR* or *warning*") -> str:
         """
         Fetches the logs for a specific workflow.
         """
-        logs = f"{self.base_url}/api/v1/fetchlogs"
-        response = requests.get(logs)
+        logs_url = f"{self.base_url}/api/v1/fetchlogs"
+        response = requests.get(logs_url, params={"pull_interval": pull_interval, "filter_pattern": filter_pattern})
 
          # Raise an exception for bad status codes (4xx or 5xx)
         response.raise_for_status()
