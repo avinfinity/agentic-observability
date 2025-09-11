@@ -23,6 +23,7 @@ Instructions:
 - Always explain briefly what each command does.  
 - If no relevant kubectl or flagd command applies, respond with: `"No direct kubectl/flagd remediation available. Manual investigation required."`
 - In the output, remove the duplicate entries if any.
+- please do not use ''' json ''' or ```json ``` tags in the output.
 
 Output format (JSON):
 {

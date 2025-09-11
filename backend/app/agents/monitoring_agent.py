@@ -25,6 +25,7 @@ Instructions:
 - If possible, include the **timestamp, service name, and error/warning message** in a structured format.  
 - If no errors or warnings are found, respond with: "No error or warning logs found."  
 - In the output, remove the duplicate entries if any.
+- please do not use ''' json ''' or ```json ``` tags in the output.
 
 Output format (JSON):  
 {

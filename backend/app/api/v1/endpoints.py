@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request, BackgroundTasks
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 from app.core.logs_fetcher import LogsFetcher
+import json
 
 # Import the core orchestration logic and the stream manager
 from app.orchestration.orchestrator import run_workflow
@@ -11,16 +12,16 @@ from app.utils.stream_manager import stream_manager
 
 router = APIRouter()
 
-# --- Pydantic Models ---
-# Define a Pydantic model for the request body to ensure type safety.
-class WorkflowStartRequest(BaseModel):
-    pass
-
-# --- API Endpoints ---
+@router.get("/fetchlogs", status_code=200)
+async def fetch_logs():
+    """
+    Endpoint to fetch logs.
+    """
+    logs = LogsFetcher().fetch_logs()
+    return logs
 
 @router.post("/workflows/start", status_code=202)
-async def start_workflow(background_tasks: BackgroundTasks
-):
+async def start_workflow(request: Request, background_tasks: BackgroundTasks):
     """
     Starts a new agent workflow.
 
@@ -29,11 +30,13 @@ async def start_workflow(background_tasks: BackgroundTasks
     It immediately returns the workflow ID to the client.
     """
     workflow_id = str(uuid.uuid4())
+    logs = await request.body()
+    logs = str(logs)
 
-    last_5_mins_logs = LogsFetcher().fetch_last_5min_logs()
+    # last_5_mins_logs = LogsFetcher().fetch_last_5min_logs()
 
-    print(last_5_mins_logs)
-    print("-----------------------------------------------------------------")
+    # print(last_5_mins_logs)
+    # print("-----------------------------------------------------------------")
     
     # Create a dedicated message queue for this workflow run
     await stream_manager.create_queue(workflow_id)
@@ -42,11 +45,10 @@ async def start_workflow(background_tasks: BackgroundTasks
     # This allows the API to return a response immediately without waiting
     # for the entire agent process to complete.
     background_tasks.add_task(
-        run_workflow, workflow_id=workflow_id, initial_logs=last_5_mins_logs
+        run_workflow, workflow_id=workflow_id, initial_logs=logs
     )
     
     return {"workflow_id": workflow_id}
-
 
 @router.get("/workflows/{workflow_id}/stream")
 async def stream_workflow_status(request: Request, workflow_id: str):

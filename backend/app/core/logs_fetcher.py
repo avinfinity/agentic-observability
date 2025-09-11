@@ -4,8 +4,8 @@ import threading
 import time
 
 class LogsFetcher:
-  
-  def fetch_last_5min_logs(self):
+
+  def fetch_logs(self, past_minutes=5):
     """
     Fetch logs from Elasticsearch from the last 5 minutes containing error, err, or warning.
     Returns:
@@ -13,7 +13,7 @@ class LogsFetcher:
     """
     from datetime import datetime, timedelta
     now = datetime.utcnow()
-    start_time = now - timedelta(minutes=5)
+    start_time = now - timedelta(minutes=past_minutes)
     # Elasticsearch expects ISO format
     start_iso = start_time.isoformat() + "Z"
     now_iso = now.isoformat() + "Z"

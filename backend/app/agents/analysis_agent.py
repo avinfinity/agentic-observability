@@ -22,6 +22,7 @@ Instructions:
 - For **warnings**, also try to suggest potential impact and what could trigger them.  
 - If the log message is too vague, output: `"Root cause could not be determined with given information."`  
 - In the output, remove the duplicate entries if any.
+- please do not use ''' json ''' or ```json ``` tags in the output.
 
 Output format (JSON):  
 {

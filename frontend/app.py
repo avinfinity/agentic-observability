@@ -48,9 +48,13 @@ with st.sidebar:
             reset_workflow_state()
             with st.spinner("Initializing workflow..."):
                 try:
-                    workflow_id = st.session_state.api_client.start_workflow()
+                    logs = st.session_state.api_client.fetch_logs()
+                    st.success(f"Logs fetched successfully!")
+                    
+                    workflow_id = st.session_state.api_client.start_workflow(logs)
                     st.session_state.workflow_id = workflow_id
                     st.success(f"Workflow started with ID: `{workflow_id}`")
+                    
                     st.session_state.api_client.listen_to_stream(
                         workflow_id, st.session_state.messages
                     )
