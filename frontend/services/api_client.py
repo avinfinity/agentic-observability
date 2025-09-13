@@ -23,7 +23,19 @@ class APIClient:
         """
         self.base_url = base_url
 
-    def start_workflow(self) -> str:
+    def fetch_logs(self, pull_interval: int=10, filter_pattern: str="*error* or *ERR* or *warning*") -> str:
+        """
+        Fetches the logs for a specific workflow.
+        """
+        logs_url = f"{self.base_url}/api/v1/fetchlogs"
+        response = requests.get(logs_url, params={"pull_interval": pull_interval, "filter_pattern": filter_pattern})
+
+         # Raise an exception for bad status codes (4xx or 5xx)
+        response.raise_for_status()
+
+        return str(response.json())
+
+    def start_workflow(self, logs:str) -> str:
         """
         Sends a request to the backend to start a new agent workflow.
 
@@ -37,8 +49,8 @@ class APIClient:
             requests.exceptions.RequestException: If the API call fails.
         """
         start_url = f"{self.base_url}/api/v1/workflows/start"
-        response = requests.post(start_url)
-        
+        response = requests.post(start_url, data=logs)
+
         # Raise an exception for bad status codes (4xx or 5xx)
         response.raise_for_status()
         

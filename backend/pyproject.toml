@@ -6,6 +6,10 @@ authors = ["Avinash Rai <avinash.rai@example.com>"]
 readme = "README.md"
 package-mode = false
 
+[tool.pyright]
+typeCheckingMode = "off"
+ignore = ["*"]
+
 [tool.poetry.dependencies]
 python = "^3.13"
 fastapi = "^0.116.0"

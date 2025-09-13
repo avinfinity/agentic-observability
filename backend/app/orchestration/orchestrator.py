@@ -88,31 +88,35 @@ async def run_workflow(workflow_id: str, initial_logs: str):
         args['workflow_id'] = workflow_id
         args['logs'] = initial_logs
 
-        error_logs = ""
-        await stream_manager.publish(workflow_id, monitoring_agent.name, "WORKING", f"Workflow started for id: '{workflow_id}'", input_="", output="")
-        async for msg in monitoring_agent.invoke(messages= initial_logs, arguments=args, kernel=kernel):
-            error_logs += msg.content.inner_content.text
-        args['error_logs'] = error_logs
-        await stream_manager.publish(workflow_id, monitoring_agent.name, "COMPLETED", data=error_logs, input_="", output="")
-        print(error_logs)
+        print(initial_logs)
 
-        root_cause = ""
-        await stream_manager.publish(workflow_id, analysis_agent.name, "WORKING", f"Workflow started for id: '{workflow_id}'", input_="", output="")
-        async for msg in analysis_agent.invoke(messages=error_logs, arguments=args, kernel=kernel):
-            root_cause += msg.content.inner_content.text
-        args['root_cause'] = root_cause
-        await stream_manager.publish(workflow_id, analysis_agent.name, "COMPLETED", data=root_cause, input_="", output="")
-        print(root_cause)
-
-        kubectl_commands = ""
-        await stream_manager.publish(workflow_id, remediation_agent.name, "WORKING", f"Workflow started for id: '{workflow_id}'", input_="", output="")
-        async for msg in remediation_agent.invoke(messages=root_cause, arguments=args, kernel=kernel):
-            kubectl_commands += msg.content.inner_content.text
-        await stream_manager.publish(workflow_id, remediation_agent.name, "COMPLETED", data=kubectl_commands, input_="", output="")
-        print(kubectl_commands)
-
+        error_logs = await invoke_agent(monitoring_agent, args, kernel, workflow_id, initial_logs, "error_logs")
+        root_cause = await invoke_agent(analysis_agent, args, kernel, workflow_id, error_logs, "root_cause")
+        kubectl_commands = await invoke_agent(remediation_agent, args, kernel, workflow_id, root_cause, "kubectl_commands")
     except Exception as e:
         print(f"An error occurred during the workflow: {e}")
+        traceback.print_exc()
         await stream_manager.publish(workflow_id, "OrchestratorAgent", "ERROR", str(e), input_="", output="")
     finally:
         await stream_manager.finish(workflow_id)
+
+
+async def invoke_agent(agent:ChatCompletionAgent, args:KernelArguments, kernel:sk.Kernel, workflow_id: str, initial_logs: str, arg_key: str = ""):
+
+    if initial_logs is None or initial_logs == "":
+        return ""
+    
+    output_logs = ""
+    await stream_manager.publish(workflow_id, agent.name, "WORKING", f"Workflow started for id: '{workflow_id}'")
+
+    async for msg in agent.invoke(messages= initial_logs, arguments=args, kernel=kernel):
+        if msg is not None and msg.content is not None and msg.content.inner_content is not None and msg.content.inner_content.text is not None:
+            output_logs += msg.content.inner_content.text
+        else:
+            print("Received empty message or content.")
+
+    await stream_manager.publish(workflow_id, agent.name, "COMPLETED", data=output_logs)
+    
+    args[arg_key] = output_logs
+    print(output_logs)
+    return output_logs

@@ -2,10 +2,11 @@
 from elasticsearch import Elasticsearch
 import threading
 import time
+import logging
 
 class LogsFetcher:
-  
-  def fetch_last_5min_logs(self):
+
+  def fetch_logs(self, pull_interval_in_sec=5, filter_pattern="*error* OR *err* OR *warning*"):
     """
     Fetch logs from Elasticsearch from the last 5 minutes containing error, err, or warning.
     Returns:
@@ -13,7 +14,7 @@ class LogsFetcher:
     """
     from datetime import datetime, timedelta
     now = datetime.utcnow()
-    start_time = now - timedelta(minutes=5)
+    start_time = now - timedelta(seconds=pull_interval_in_sec)
     # Elasticsearch expects ISO format
     start_iso = start_time.isoformat() + "Z"
     now_iso = now.isoformat() + "Z"
@@ -26,7 +27,7 @@ class LogsFetcher:
               "must": [
                 {"range": {"@timestamp": {"gte": start_iso, "lte": now_iso}}},
                 {"query_string": {
-                  "query": "*error* OR *err* OR *warning*",
+                  "query": filter_pattern,
                   "fields": ["*"]
                 }}
               ]
@@ -46,7 +47,8 @@ class LogsFetcher:
           logs.append(json.dumps(src))
       return "\n".join(logs)
     except Exception as e:
-      return f"Error pulling logs: {e}"
+      logging.error(f"Error fetching logs: {e}")
+      raise
 
   def __init__(self, es_host='http://localhost:9200', es_user='elastic', es_pass='changeme', es_index='logs-*-*,logs-*,filebeat-*', interval=300, periodic_pull=False):
     self.es_host = es_host
