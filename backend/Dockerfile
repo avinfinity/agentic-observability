@@ -7,11 +7,11 @@ WORKDIR /app
 RUN pip install poetry
 
 # Copy only dependency files to leverage Docker cache
-COPY poetry.lock pyproject.toml./
+COPY poetry.lock pyproject.toml ./
 
 # Install dependencies
 RUN poetry config virtualenvs.create false && \
-    poetry install --no-dev --no-interaction --no-ansi
+    poetry install --no-interaction --no-ansi
 
 # Stage 2: Final image
 FROM python:3.11-slim
@@ -28,4 +28,4 @@ COPY ./app ./app
 EXPOSE 8000
 
 # Command to run the application using Uvicorn
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
