@@ -10,11 +10,11 @@ services:
     ports:
       - "8000:8000"
     env_file:
-      -./backend/.env
+      - ./backend/.env
     # Add a volume to mount the local source code into the container.
     # This enables live-reloading for the FastAPI server when code changes.
     volumes:
-      -./backend:/app
+      - ./backend:/app
     networks:
       - agent_network
 
@@ -32,7 +32,7 @@ services:
     # Add a volume to mount the local source code into the container.
     # This enables live-reloading for the Streamlit app when you save changes.
     volumes:
-      -./frontend:/app
+      - ./frontend:/app
     depends_on:
       - backend
     networks:
