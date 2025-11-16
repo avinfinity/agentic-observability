@@ -505,7 +505,7 @@ feedback_store = FeedbackStore(storage_path="custom/path")
 
 For issues, questions, or contributions:
 - Open an issue on GitHub
-- Contact: avinash.rai@example.com
+- Contact: avinfinity@gmail.com
 
 ---
 
