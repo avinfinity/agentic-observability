@@ -11,6 +11,7 @@ import express from "express";
 import cors from "cors";
 import { v4 as uuidv4 } from "uuid";
 import fetch from "node-fetch";
+import rateLimit from "express-rate-limit";
 
 // Backend webhook URL for learning feedback
 // Use 127.0.0.1 instead of localhost to force IPv4 (avoid IPv6 connection issues)
@@ -198,10 +199,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static("src"));
 
+// Apply a rate limiter to routes serving files.
+const fileLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+});
+
 const APPROVAL_PORT = 3100;
 
 // Serve approval UI
-app.get("/", (req, res) => {
+app.get("/", fileLimiter, (req, res) => {
   res.sendFile("approval-ui.html", { root: "src" });
 });
 
