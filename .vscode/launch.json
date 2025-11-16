@@ -12,7 +12,10 @@
             "module": "uvicorn",
             "args": [
                 "app.main:app",
-                "--reload"
+                "--host",
+                "localhost",
+                "--port",
+                "8000",
             ],
             "cwd": "${workspaceFolder}/backend",
             "env": {

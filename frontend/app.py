@@ -8,6 +8,10 @@ from components.workflow_visualizer import (
     update_flow_node_by_message,
     render_flow,
 )
+from components.feedback_panel import (
+    render_feedback_panel,
+    render_learning_statistics
+)
 
 # --- Configuration ---
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
@@ -23,6 +27,7 @@ if "agent_details" not in st.session_state:
        "MonitoringAgent": {"input": "", "output": "", "status": "pending", "content": ""},
         "AnalysisAgent": {"input": "", "output": "", "status": "pending", "content": ""},
         "RemediationAgent": {"input": "", "output": "", "status": "pending", "content": ""},
+        "KubectlCommandAgent": {"input": "", "output": "", "status": "pending", "content": ""},  # Hidden from UI
         "OrchestratorAgent": {"input": "", "output": "", "status": "pending", "content": ""}
     }
 if "api_client" not in st.session_state:
@@ -33,6 +38,10 @@ if "filter_pattern" not in st.session_state:
     st.session_state.filter_pattern = "*error* or *ERR* or *warning*"
 if "fetched_logs" not in st.session_state:
     st.session_state.fetched_logs = ""
+if "workflow_complete" not in st.session_state:
+    st.session_state.workflow_complete = False
+if "show_feedback" not in st.session_state:
+    st.session_state.show_feedback = False
 
 def reset_workflow_state():
     """Resets all session state variables for a new workflow run."""
@@ -41,10 +50,13 @@ def reset_workflow_state():
     st.session_state.listener_started = False
     st.session_state.workflow_id = None
     st.session_state.fetched_logs = ""
+    st.session_state.workflow_complete = False
+    st.session_state.show_feedback = False
     st.session_state.agent_details = {
         "MonitoringAgent": {"input": "", "output": "", "status": "pending", "content": ""},
         "AnalysisAgent": {"input": "", "output": "", "status": "pending", "content": ""},
         "RemediationAgent": {"input": "", "output": "", "status": "pending", "content": ""},
+        "KubectlCommandAgent": {"input": "", "output": "", "status": "pending", "content": ""},  # Hidden from UI
         "OrchestratorAgent": {"input": "", "output": "", "status": "pending", "content": ""}
     }
 
@@ -92,12 +104,20 @@ with st.sidebar:
             value=st.session_state.filter_pattern,
             placeholder="Enter filter pattern"
         )
+    
+    # Add learning statistics to sidebar
+    if st.session_state.workflow_id:
+        try:
+            render_learning_statistics(st.session_state.api_client)
+        except Exception as e:
+            pass  # Silently fail if stats not available
 
 
-st.title("✨ Multi-Agent Framework for Microservice Observability ✨")
+st.title("✨ Multi-Agent Framework with Reinforcement Learning ✨")
 st.markdown('''
-- AI agents will work together to monitor, analyze, and remediate the infra problems at real-time.
-- Watch their collaboration in real-time below.
+- AI agents work together to monitor, analyze, and remediate infrastructure problems in real-time.
+- **NEW:** Agents learn from your feedback and improve over time!
+- Watch their collaboration below and rate their performance to help them learn.
             '''
 )
 
@@ -141,10 +161,13 @@ def parse_and_update_state(message):
 
     print("DEBUG MESSAGE RECEIVED:", agent, status)
 
-    st.session_state.agent_details[agent]["status"] = status
-    st.session_state.agent_details[agent]["content"] = content
+    # Update agent details if agent exists in our tracking
+    if agent in st.session_state.agent_details:
+        st.session_state.agent_details[agent]["status"] = status
+        st.session_state.agent_details[agent]["content"] = content
 
-    if st.session_state.flow_state:
+    # Skip KubectlCommandAgent in flow visualization (internal agent, not shown to users)
+    if agent != "KubectlCommandAgent" and st.session_state.flow_state:
         st.session_state.flow_state = update_flow_node_by_message(
             st.session_state.flow_state, agent_name=agent, status=status, content=content
         )
@@ -158,8 +181,9 @@ def process_messages():
             message = st.session_state.messages.get_nowait()
             if message is None:
                 st.session_state.listener_started = False
+                st.session_state.workflow_complete = True
+                st.toast("✅ Workflow finished! You can now provide feedback.")
                 st.rerun()
-                st.toast("Workflow finished!")
                 break
             parse_and_update_state(message)
     except queue.Empty:
@@ -179,3 +203,28 @@ with flow_placeholder:
 if st.session_state.listener_started:
     time.sleep(1)
     st.rerun()
+
+# --- Feedback Section (appears after workflow completion) ---
+if st.session_state.workflow_complete and st.session_state.workflow_id:
+    # Add a prominent button to show feedback
+    if not st.session_state.show_feedback:
+        st.markdown("---")
+        col1, col2, col3 = st.columns([1, 2, 1])
+        with col2:
+            if st.button(
+                "📝 Provide Feedback (Help Agents Learn!)",
+                use_container_width=True,
+                type="primary",
+                key="show_feedback_btn"
+            ):
+                st.session_state.show_feedback = True
+                st.rerun()
+    
+    # Show feedback panel if requested
+    if st.session_state.show_feedback:
+        render_feedback_panel(st.session_state.api_client, st.session_state.workflow_id)
+        
+        # Add button to hide feedback
+        if st.button("Hide Feedback Panel", key="hide_feedback_btn"):
+            st.session_state.show_feedback = False
+            st.rerun()

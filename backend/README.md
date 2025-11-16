@@ -3,7 +3,7 @@ Here is the raw Markdown content of the `README.md` file, without any extra form
 ```
 # Multi-Agent AI System with FastAPI, Streamlit, and Gemini
 
-This project is a complete full-stack application that demonstrates a multi-agent AI system. The backend is built with **FastAPI** and uses **Microsoft's Semantic Kernel** to orchestrate multiple AI agents powered by **Google's Gemini API**. The frontend is an interactive **Streamlit** dashboard that visualizes the agents' collaboration in real-time. The entire application is containerized with **Docker** for easy setup and deployment.
+This project is a complete full-stack application that demonstrates a multi-agent AI system. The backend is built with **FastAPI** and uses **LangChain** to orchestrate multiple AI agents powered by **Google's Gemini 2.5 Pro API**. The frontend is an interactive **Streamlit** dashboard that visualizes the agents' collaboration in real-time. The entire application is containerized with **Docker** for easy setup and deployment.
 
 ---
 
@@ -11,7 +11,7 @@ This project is a complete full-stack application that demonstrates a multi-agen
 
 * **Decoupled Architecture:** A high-performance FastAPI backend for AI logic, completely separate from the Streamlit frontend for the user interface.
 
-* **Multi-Agent Orchestration:** Utilizes Semantic Kernel to manage a workflow between specialized agents (Monitoring, Analysis, Remediation) coordinated by a master Orchestrator agent.
+* **Multi-Agent Orchestration:** Utilizes LangChain framework to manage a workflow between specialized agents (Monitoring, Analysis, Remediation) coordinated by a master Orchestrator.
 
 * **Real-Time Visualization:** The frontend displays a live, graphical representation of the agent workflow, showing which agent is active and the handoffs between them.
 
@@ -108,8 +108,10 @@ Open the newly created `backend/.env` file and add your Google Gemini API key:
 
 # backend/.env
 
-GOOGLE\_API\_KEY="your-google-gemini-api-key"
-GEMINI\_MODEL\_ID="gemini-1.5-pro-latest"
+GOOGLE_API_KEY="your-google-gemini-api-key"
+GEMINI_MODEL_ID="gemini-2.0-flash-exp"
+TEMPERATURE=0.7
+MAX_TOKENS=8192
 
 ```
 
