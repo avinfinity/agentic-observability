@@ -8,7 +8,7 @@
 ---
 ## System Design 
 <div>
-    <img src="https://github.com/avinfinity/agentic-observability/blob/main/System_Design.png"/>
+    <img src="https://github.com/avinfinity/agentic-observability/blob/main/SystemDesign.png"/>
 </div>
 
 ## Data Flow Diagram
