@@ -1,193 +1,534 @@
-Here is the raw Markdown content of the `README.md` file, without any extra formatting, so you can copy and paste it directly.
+# Agentic Observability Backend
 
-```
-# Multi-Agent AI System with FastAPI, Streamlit, and Gemini
-
-This project is a complete full-stack application that demonstrates a multi-agent AI system. The backend is built with **FastAPI** and uses **LangChain** to orchestrate multiple AI agents powered by **Google's Gemini 2.5 Pro API**. The frontend is an interactive **Streamlit** dashboard that visualizes the agents' collaboration in real-time. The entire application is containerized with **Docker** for easy setup and deployment.
+An AI-powered Kubernetes observability and remediation system with reinforcement learning capabilities. This backend service uses multi-agent orchestration powered by **Google Gemini**, **LangChain**, and **LangGraph** to automatically monitor logs, analyze issues, and generate remediation plans for Kubernetes environments.
 
 ---
 
 ## ✨ Features
 
-* **Decoupled Architecture:** A high-performance FastAPI backend for AI logic, completely separate from the Streamlit frontend for the user interface.
+* **Multi-Agent Orchestration**: Four specialized AI agents working together:
+  - **Monitoring Agent**: Extracts errors and warnings from logs
+  - **Analysis Agent**: Performs root cause analysis
+  - **Remediation Agent**: Generates actionable remediation plans with kubectl commands
+  - **Kubectl Command Agent**: Formats and submits commands to MCP server for human approval
 
-* **Multi-Agent Orchestration:** Utilizes LangChain framework to manage a workflow between specialized agents (Monitoring, Analysis, Remediation) coordinated by a master Orchestrator.
+* **Reinforcement Learning**: RemediationAgent learns from human feedback via:
+  - **Primary Signal**: MCP approval/rejection of proposed commands
+  - **Secondary Signal**: Optional UI feedback (ratings, comments)
 
-* **Real-Time Visualization:** The frontend displays a live, graphical representation of the agent workflow, showing which agent is active and the handoffs between them.
+* **Real-Time Communication**: Server-Sent Events (SSE) for streaming agent updates to clients
 
-* **Live Event Streaming:** Employs Server-Sent Events (SSE) for efficient, real-time communication from the backend to the frontend.
+* **Human-in-the-Loop**: Integration with Kubernetes MCP Server for command approval workflow
 
-* **Containerized:** Fully containerized with Docker and orchestrated with Docker Compose for a simple, one-command startup.
+* **Kubernetes Native**: Direct integration with Kubernetes clusters via kubectl commands
+
+* **Log Processing**: Fetch and analyze logs from Elasticsearch or other sources
 
 ---
 
-## 🏛️ Project Architecture
-
-The project is structured as a monorepo with two distinct services:
-
-* **`backend/`**: A FastAPI application that serves the core AI logic. It exposes a REST API to start workflows and an SSE endpoint to stream live updates.
-
-* **`frontend/`**: A Streamlit application that provides the user interface. It communicates with the backend via API calls and visualizes the real-time data it receives.
+## 🏛️ Architecture
 
 ```
-
-multi-agent-system/
-├── backend/
-│   ├── app/
-│   ├── Dockerfile
-│   ├── pyproject.toml
-│   └── .env.example
-├── frontend/
-│   ├── app.py
-│   ├── components/
-│   ├── services/
-│   ├── Dockerfile
-│   ├── pyproject.toml
-│   └── .env.example
-├── docker-compose.yml
-└── README.md
-
+backend/
+├── app/
+│   ├── agents/                    # AI Agent implementations
+│   │   ├── monitoring_agent.py    # Log analysis & error extraction
+│   │   ├── analysis_agent.py      # Root cause analysis
+│   │   ├── remediation_agent.py   # Remediation plan generation (with RL)
+│   │   └── kubectl_command_agent.py # Command formatting & MCP submission
+│   ├── api/
+│   │   └── v1/
+│   │       ├── endpoints.py       # Workflow & log endpoints
+│   │       └── feedback_endpoints.py # Reinforcement learning APIs
+│   ├── core/
+│   │   ├── config.py              # Settings management
+│   │   ├── logs_fetcher.py        # Log retrieval from data sources
+│   │   └── mcp_client.py          # Kubernetes MCP server client
+│   ├── learning/
+│   │   ├── feedback_store.py      # Feedback storage & reward computation
+│   │   └── example_selector.py    # In-context learning example selection
+│   ├── orchestration/
+│   │   └── orchestrator.py        # Multi-agent workflow coordinator
+│   ├── utils/
+│   │   ├── messages.py            # Message formatting utilities
+│   │   └── stream_manager.py      # SSE event streaming manager
+│   └── main.py                    # FastAPI application entry point
+├── data/
+│   └── feedback/
+│       └── remediation_feedback.jsonl # Persistent feedback storage
+├── logs/
+│   └── app.log                    # Application logs
+├── pyproject.toml                 # Poetry dependencies
+└── README.md                      # This file
 ```
+
+---
+
+## 📚 Documentation
+
+This repository includes comprehensive documentation to help you get started:
+
+| Document | Description |
+|----------|-------------|
+| **[QUICKSTART.md](QUICKSTART.md)** | Get up and running in 5 minutes |
+| **[API_DOCUMENTATION.md](API_DOCUMENTATION.md)** | Complete API reference with examples |
+| **[DEPLOYMENT.md](DEPLOYMENT.md)** | Production deployment guide (Docker, Kubernetes, AWS) |
+| **[CONTRIBUTING.md](CONTRIBUTING.md)** | How to contribute to this project |
+| **[CHANGELOG.md](CHANGELOG.md)** | Version history and release notes |
+
+**Quick Links:**
+- 🚀 New here? Start with [QUICKSTART.md](QUICKSTART.md)
+- 🔧 Need API details? See [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
+- 🌐 Deploying to production? Read [DEPLOYMENT.md](DEPLOYMENT.md)
 
 ---
 
 ## 🛠️ Prerequisites
 
-Before you begin, ensure you have the following installed on your system:
+Ensure you have the following installed:
 
-* **Docker**: <https://docs.docker.com/get-docker/>
-
-* **Docker Compose**: <https://docs.docker.com/compose/install/> (usually included with Docker Desktop)
+* **Python**: 3.11 or higher
+* **Poetry**: Package manager ([installation guide](https://python-poetry.org/docs/#installation))
+* **Google Gemini API Key**: Required for AI agent functionality
+* **Kubernetes Cluster** (optional): For testing actual remediation commands
+* **Kubernetes MCP Server** (optional): For human-in-the-loop approval workflow
 
 ---
 
-## 🚀 Getting Started
-
-Follow these steps to set up and run the project locally.
+## 🚀 Installation & Setup
 
 ### 1. Clone the Repository
 
+```bash
+git clone <your-repository-url>
+cd agentic-observability/backend
 ```
 
-git clone \<your-repository-url\>
-cd multi-agent-system
+### 2. Install Dependencies
 
+Using Poetry (recommended):
+
+```bash
+poetry install
 ```
 
-### 2. Configure Environment Variables
+Or using pip:
 
-The application requires API keys and configuration settings, which are managed through `.env` files. Example files are provided.
-
-#### A. Backend Configuration
-
-First, obtain a Google Gemini API Key:
-
-1. Go to https://aistudio.google.com/.
-
-2. Click on "Get API key" and create a new API key.
-
-3. Copy the key.
-
-Now, create the backend `.env` file:
-
+```bash
+pip install -r requirements.txt  # If you have a requirements.txt
 ```
 
-# Navigate to the backend directory
+### 3. Configure Environment Variables
 
-cd backend
+Create a `.env` file in the backend directory:
 
-# Copy the example file to create your own .env file
-
-cp .env.example .env
-
+```bash
+cp .env.example .env  # If example exists, otherwise create manually
 ```
 
-Open the newly created `backend/.env` file and add your Google Gemini API key:
+Add the following configuration to your `.env` file:
 
-```
-
-# backend/.env
-
-GOOGLE_API_KEY="your-google-gemini-api-key"
+```bash
+# Google Gemini API Configuration
+GOOGLE_API_KEY="your-google-gemini-api-key-here"
 GEMINI_MODEL_ID="gemini-2.0-flash-exp"
 TEMPERATURE=0.7
 MAX_TOKENS=8192
-
 ```
 
-#### B. Frontend Configuration
+**How to get a Google Gemini API Key:**
+1. Visit [Google AI Studio](https://aistudio.google.com/)
+2. Click "Get API key" and create a new API key
+3. Copy the key and paste it into your `.env` file
 
-The frontend does not require any secrets, but the `.env` file structure is included for consistency. You can simply copy the example file.
+### 4. Set Up Data Directories
 
+The application will automatically create necessary directories, but you can set them up manually:
+
+```bash
+mkdir -p data/feedback
+mkdir -p logs
 ```
 
-# Navigate back to the project root, then to the frontend directory
+---
 
-cd ../frontend
+## 🎯 Running the Application
 
-# Copy the example file
+### Quick Start (Recommended)
 
-cp .env.example .env
+Use the provided helper scripts for easy startup:
 
+**Unix/Linux/macOS:**
+```bash
+# Verify setup first (optional)
+./run.sh --verify
+
+# Start the server
+./run.sh
 ```
 
-The `BACKEND_URL` is set automatically by `docker-compose.yml` and does not need to be in this file.
+**Windows:**
+```bash
+# Verify setup first (optional)
+run.bat --verify
 
-### 3. Build and Run the Application
-
-With the environment variables configured, you can start the entire application with a single command from the project's root directory.
-
+# Start the server
+run.bat
 ```
 
-# Make sure you are in the root directory of the project
+### Manual Start
 
-cd ..
+#### Development Mode
 
-# Build the Docker images and start the services
+Using Poetry:
 
-docker-compose up --build
-
+```bash
+poetry run uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-This command will:
+Or activate the virtual environment:
 
-* Build the Docker images for both the backend and frontend services.
-
-* Create a shared network for the containers.
-
-* Start both containers.
-
-### 4. Access the Application
-
-Once the containers are running, you can access the services:
-
-* **Streamlit Frontend**: Open your web browser and navigate to `http://localhost:8501`
-
-* **FastAPI Backend Docs**: To see the API documentation, navigate to `http://localhost:8000/docs`
-
-## ⚙️ How to Use
-
-1. Open the Streamlit application at `http://localhost:8501`.
-
-2. You will see a text area pre-filled with a sample system issue. You can use this or enter your own.
-
-3. Click the "**🚀 Start Agent Workflow**" button.
-
-4. The application will start the backend process and begin receiving real-time updates.
-
-5. On the right side, the **Agent Workflow Visualization** will light up, showing the Orchestrator agent starting the process. As agents are called (Monitoring, Analysis, etc.), their corresponding nodes and the edges leading to them will change color to indicate activity.
-
-6. On the left side, under **Live Event Logs**, you can expand each event to see the raw JSON data being streamed from the backend.
-
-## 🛑 Stopping the Application
-
-To stop the running application and remove the containers, press `Ctrl + C` in the terminal where `docker-compose` is running. Then, run:
-
+```bash
+poetry shell
+uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 ```
 
-docker-compose down
+#### Production Mode
 
+```bash
+poetry run uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 4
 ```
 
-This will stop and remove the containers and the network created by Docker Compose.
+#### Verify Setup
+
+Before running, you can verify your setup:
+
+```bash
+python verify_setup.py
 ```
+
+This will check:
+- Python version compatibility
+- Required environment variables
+- Dependencies installation
+- API key configuration
+- Directory structure
+
+The server will start at `http://localhost:8000`
+
+---
+
+## 📚 API Documentation
+
+Once the server is running, access the interactive API documentation:
+
+* **Swagger UI**: http://localhost:8000/docs
+* **ReDoc**: http://localhost:8000/redoc
+
+### Key Endpoints
+
+#### Workflow Management
+
+**Start a new workflow**
+```bash
+POST /api/v1/workflows/start
+Content-Type: text/plain
+
+<paste your logs here>
+```
+
+Response:
+```json
+{
+  "workflow_id": "uuid-here"
+}
+```
+
+**Stream workflow updates (SSE)**
+```bash
+GET /api/v1/workflows/{workflow_id}/stream
+```
+
+Returns real-time events as the agents process the workflow.
+
+#### Log Fetching
+
+**Fetch logs from data source**
+```bash
+GET /api/v1/fetchlogs?pull_interval=10&filter_pattern=*error*
+```
+
+Parameters:
+- `pull_interval`: Seconds to look back (default: 10)
+- `filter_pattern`: Log filter pattern (default: *)
+
+#### Reinforcement Learning
+
+**Submit UI feedback**
+```bash
+POST /api/v1/feedback/submit
+Content-Type: application/json
+
+{
+  "feedback_id": "workflow_123_remediation_1234567890",
+  "rating": 5,
+  "was_helpful": true,
+  "feedback_comments": "Great remediation plan!",
+  "improvements_suggested": "Add rollback steps"
+}
+```
+
+**Get learning statistics**
+```bash
+GET /api/v1/feedback/statistics
+```
+
+**MCP approval callback (webhook)**
+```bash
+POST /api/v1/feedback/mcp-approval
+Content-Type: application/json
+
+{
+  "approval_id": "approval_123abc",
+  "status": "approved",
+  "approved_count": 5,
+  "rejected_count": 0
+}
+```
+
+---
+
+## 🔄 Workflow Process
+
+1. **Client sends logs** → `POST /api/v1/workflows/start`
+2. **Orchestrator initializes** → Creates workflow ID and queue
+3. **Monitoring Agent** → Extracts errors/warnings from logs
+4. **Analysis Agent** → Identifies root causes
+5. **Remediation Agent** → Generates remediation plan with kubectl commands
+6. **Kubectl Command Agent** → Formats and submits commands to MCP server
+7. **MCP Server** → Human approves/rejects commands
+8. **Feedback Loop** → System learns from approval/rejection
+
+All steps stream real-time updates via SSE to connected clients.
+
+---
+
+## 🧠 Reinforcement Learning System
+
+The **RemediationAgent** improves over time using a dual-signal feedback system:
+
+### Primary Signal: MCP Approval
+- Commands submitted to Kubernetes MCP Server
+- Human approves or rejects with reasons
+- Approval/rejection automatically updates feedback store
+- Reward score computed based on approval ratio
+
+### Secondary Signal: UI Feedback
+- Users can rate remediation plans (1-5 stars)
+- Mark as helpful/not helpful
+- Provide comments and improvement suggestions
+- Enhances MCP signal for better learning
+
+### Reward Computation
+```
+Reward = (MCP_Signal × 4.0 + UI_Signal × 1.0) / Total_Weight
+```
+- MCP signal has 4x weight (primary)
+- UI signals enhance learning
+- High-reward examples used for in-context learning
+
+---
+
+## 🔌 Integration with Kubernetes MCP Server
+
+This backend integrates with a separate Kubernetes MCP Server for command approval:
+
+**MCP Server Configuration:**
+- Default URL: `http://localhost:3100`
+- Endpoint: `/api/approvals/propose`
+
+**Setup MCP Server:**
+1. Clone/install the Kubernetes MCP Server (separate repo)
+2. Configure the MCP server to call back to this backend at:
+   ```
+   POST http://localhost:8000/api/v1/feedback/mcp-approval
+   ```
+3. Start the MCP server on port 3100
+
+**Workflow:**
+1. Backend proposes commands → MCP Server
+2. Human reviews in MCP UI (http://localhost:3100)
+3. Approval/rejection → Webhook to backend
+4. Backend updates feedback store → Learning cycle
+
+---
+
+## 📊 Monitoring & Logs
+
+Application logs are written to `logs/app.log`
+
+View logs in real-time:
+```bash
+tail -f logs/app.log
+```
+
+Feedback data is stored in:
+```
+data/feedback/remediation_feedback.jsonl
+```
+
+Each line is a JSON record with input, output, rewards, and feedback.
+
+---
+
+## 🧪 Testing the System
+
+### 1. Quick Test with Sample Logs
+
+```bash
+curl -X POST http://localhost:8000/api/v1/workflows/start \
+  -H "Content-Type: text/plain" \
+  -d "ERROR: Pod api-service-7b4f9d in namespace production is in CrashLoopBackOff state"
+```
+
+### 2. Stream the Results
+
+```bash
+curl http://localhost:8000/api/v1/workflows/{workflow_id}/stream
+```
+
+### 3. Submit Feedback
+
+```bash
+curl -X POST http://localhost:8000/api/v1/feedback/submit \
+  -H "Content-Type: application/json" \
+  -d '{
+    "feedback_id": "workflow_xxx_remediation_xxx",
+    "rating": 5,
+    "was_helpful": true
+  }'
+```
+
+### 4. Check Statistics
+
+```bash
+curl http://localhost:8000/api/v1/feedback/statistics
+```
+
+---
+
+## 🐳 Docker Deployment (Optional)
+
+Create a `Dockerfile`:
+
+```dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install poetry
+RUN pip install poetry
+
+# Copy dependency files
+COPY pyproject.toml poetry.lock ./
+
+# Install dependencies
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi
+
+# Copy application code
+COPY app ./app
+COPY data ./data
+
+# Expose port
+EXPOSE 8000
+
+# Run the application
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+Build and run:
+
+```bash
+docker build -t agentic-observability-backend .
+docker run -p 8000:8000 --env-file .env agentic-observability-backend
+```
+
+---
+
+## 🔧 Configuration Options
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `GOOGLE_API_KEY` | Google Gemini API key | Required |
+| `GEMINI_MODEL_ID` | Gemini model version | `gemini-2.0-flash-exp` |
+| `TEMPERATURE` | LLM temperature (creativity) | `0.7` |
+| `MAX_TOKENS` | Maximum tokens per response | `8192` |
+
+### Customizing Agents
+
+Agent prompts and behavior can be customized in:
+- `app/agents/monitoring_agent.py`
+- `app/agents/analysis_agent.py`
+- `app/agents/remediation_agent.py`
+- `app/agents/kubectl_command_agent.py`
+
+### Feedback Storage
+
+Modify storage paths in `app/learning/feedback_store.py`:
+
+```python
+feedback_store = FeedbackStore(storage_path="custom/path")
+```
+
+---
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Commit changes: `git commit -m 'Add amazing feature'`
+4. Push to branch: `git push origin feature/amazing-feature`
+5. Open a Pull Request
+
+---
+
+## 📝 License
+
+[Add your license here]
+
+---
+
+## 🙋 Support
+
+For issues, questions, or contributions:
+- Open an issue on GitHub
+- Contact: avinash.rai@example.com
+
+---
+
+## 🔮 Future Enhancements
+
+- [ ] Support for multiple LLM providers (OpenAI, Anthropic, etc.)
+- [ ] Advanced log analysis with embeddings
+- [ ] Automated rollback mechanisms
+- [ ] Multi-cluster support
+- [ ] Prometheus/Grafana integration
+- [ ] Slack/Teams notifications
+- [ ] Custom agent plugins
+
+---
+
+## 📖 Additional Resources
+
+- [LangChain Documentation](https://python.langchain.com/)
+- [Google Gemini API](https://ai.google.dev/)
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)
+- [Poetry Documentation](https://python-poetry.org/)
+
+---
+
+**Version**: 2.0.0  
+**Last Updated**: November 2025
