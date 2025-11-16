@@ -95,3 +95,68 @@ class APIClient:
         # main program exits, which is suitable for this background task.
         thread = threading.Thread(target=run, daemon=True)
         thread.start()
+    
+    def get_feedback_opportunities(self, workflow_id: str) -> dict:
+        """
+        Gets feedback opportunities for a completed workflow.
+        
+        Args:
+            workflow_id: The ID of the workflow
+            
+        Returns:
+            Dictionary containing feedback opportunities
+        """
+        feedback_url = f"{self.base_url}/api/v1/feedback/workflow/{workflow_id}"
+        response = requests.get(feedback_url)
+        response.raise_for_status()
+        return response.json()
+    
+    def submit_feedback(
+        self,
+        feedback_id: str,
+        rating: int = None,
+        was_helpful: bool = None,
+        feedback_comments: str = None,
+        improvements_suggested: str = None
+    ) -> dict:
+        """
+        Submits UI feedback for RemediationAgent (SECONDARY signal - 20% weight).
+        
+        PRIMARY learning signal (80%) comes from MCP approval/rejection.
+        
+        Args:
+            feedback_id: The feedback ID to rate
+            rating: 1-5 star rating (optional)
+            was_helpful: Whether the remediation was helpful (optional)
+            feedback_comments: Optional comments
+            improvements_suggested: Optional improvement suggestions
+            
+        Returns:
+            Response from the backend
+        """
+        feedback_url = f"{self.base_url}/api/v1/feedback/submit"
+        payload = {
+            "feedback_id": feedback_id,
+            "rating": rating,
+            "was_helpful": was_helpful,
+            "feedback_comments": feedback_comments,
+            "improvements_suggested": improvements_suggested
+        }
+        
+        response = requests.post(feedback_url, json=payload)
+        response.raise_for_status()
+        return response.json()
+    
+    def get_learning_statistics(self) -> dict:
+        """
+        Gets learning statistics for RemediationAgent.
+        
+        Returns MCP approval metrics (primary 80% signal) and learning pool stats.
+        
+        Returns:
+            Dictionary containing statistics
+        """
+        stats_url = f"{self.base_url}/api/v1/feedback/statistics"
+        response = requests.get(stats_url)
+        response.raise_for_status()
+        return response.json()
