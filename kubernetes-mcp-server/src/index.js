@@ -276,7 +276,7 @@ app.post("/api/approvals/:id/approve", async (req, res) => {
     });
     
   } catch (error) {
-    console.error(`❌ Approval ${id} failed:`, error.message);
+    console.error(`❌ Approval ${id} failed: ${error.message}`);
     res.status(500).json({ error: error.message });
   }
 });
