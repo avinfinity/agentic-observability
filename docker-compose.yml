@@ -1,7 +1,3 @@
-# docker-compose.yml
-
-version: '3.8'
-
 services:
   backend:
     build:
@@ -33,6 +29,25 @@ services:
     # This enables live-reloading for the Streamlit app when you save changes.
     volumes:
       - ./frontend:/app
+    depends_on:
+      - backend
+    networks:
+      - agent_network
+
+  kubernetes-mcp-server:
+    build:
+      context: ./kubernetes-mcp-server
+      dockerfile: Dockerfile
+    ports:
+      - "3100:3100"
+    environment:
+      - BACKEND_WEBHOOK_URL=http://backend:8000/api/v1/feedback/mcp-approval
+      - APPROVAL_PORT=3100
+      - KUBECONFIG=/root/.kube/config
+    volumes:
+      - ./kubernetes-mcp-server:/app
+      # Optional: mount kubeconfig for cluster access
+      # - ${KUBECONFIG_PATH:-~/.kube}:/root/.kube:ro
     depends_on:
       - backend
     networks:
